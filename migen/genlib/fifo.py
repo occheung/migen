@@ -1,3 +1,6 @@
+from functools import reduce
+from operator import and_, or_
+
 from migen.fhdl.structure import *
 from migen.fhdl.module import Module
 from migen.fhdl.specials import Memory, READ_FIRST
@@ -96,7 +99,7 @@ class SyncFIFO(Module, _FIFOInterface):
     """
     __doc__ = __doc__.format(interface=_FIFOInterface.__doc__)
 
-    def __init__(self, width, depth, fwft=True):
+    def __init__(self, width, depth, fwft=True, hi_wm=None, lo_wm=None):
         _FIFOInterface.__init__(self, width, depth)
 
         self.level = Signal(max=depth+1)
@@ -147,12 +150,28 @@ class SyncFIFO(Module, _FIFOInterface):
             self.readable.eq(self.level != 0)
         ]
 
+        if hi_wm is not None:
+            self.almost_full = Signal()
+            if hi_wm.bit_count() == 1:
+                self.comb += self.almost_full.eq(
+                    reduce(or_, [level_i for level_i in self.level[log2_int(hi_wm):]]))
+            else:
+                self.comb += self.almost_full.eq(self.level >= hi_wm)
+
+        if lo_wm is not None:
+            self.almost_empty = Signal()
+            if lo_wm.bit_count() == 1:
+                self.comb += self.almost_empty.eq(
+                    reduce(and_, [~level_i for level_i in self.level[log2_int(lo_wm):]]) | (self.level == lo_wm))
+            else:
+                self.comb += self.almost_empty.eq(self.level <= lo_wm)
+
 
 class SyncFIFOBuffered(Module, _FIFOInterface):
     """Has an interface compatible with SyncFIFO with fwft=True,
     but does not use asynchronous RAM reads that are not compatible
     with block RAMs. Increases latency by one cycle."""
-    def __init__(self, width, depth):
+    def __init__(self, width, depth, hi_wm=None, lo_wm=None):
         _FIFOInterface.__init__(self, width, depth)
         self.submodules.fifo = fifo = SyncFIFO(width, depth, False)
 
@@ -172,6 +191,22 @@ class SyncFIFOBuffered(Module, _FIFOInterface):
                 self.readable.eq(0),
             )
         self.comb += self.level.eq(fifo.level + self.readable)
+
+        if hi_wm is not None:
+            self.almost_full = Signal()
+            if hi_wm.bit_count() == 1:
+                self.comb += self.almost_full.eq(
+                    reduce(or_, [level_i for level_i in self.level[log2_int(hi_wm):]]))
+            else:
+                self.comb += self.almost_full.eq(self.level >= hi_wm)
+
+        if lo_wm is not None:
+            self.almost_empty = Signal()
+            if lo_wm.bit_count() == 1:
+                self.comb += self.almost_empty.eq(
+                    reduce(and_, [~level_i for level_i in self.level[log2_int(lo_wm):]]) | (self.level == lo_wm))
+            else:
+                self.comb += self.almost_empty.eq(self.level <= lo_wm)
 
 
 class AsyncFIFO(Module, _FIFOInterface):
