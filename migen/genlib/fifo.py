@@ -152,19 +152,11 @@ class SyncFIFO(Module, _FIFOInterface):
 
         if hi_wm is not None:
             self.almost_full = Signal()
-            if hi_wm.bit_count() == 1:
-                self.comb += self.almost_full.eq(
-                    reduce(or_, [level_i for level_i in self.level[log2_int(hi_wm):]]))
-            else:
-                self.comb += self.almost_full.eq(self.level >= hi_wm)
+            self.comb += self.almost_full.eq(self.level >= hi_wm)
 
         if lo_wm is not None:
             self.almost_empty = Signal()
-            if lo_wm.bit_count() == 1:
-                self.comb += self.almost_empty.eq(
-                    reduce(and_, [~level_i for level_i in self.level[log2_int(lo_wm):]]) | (self.level == lo_wm))
-            else:
-                self.comb += self.almost_empty.eq(self.level <= lo_wm)
+            self.comb += self.almost_empty.eq(self.level <= lo_wm)
 
 
 class SyncFIFOBuffered(Module, _FIFOInterface):
@@ -194,19 +186,11 @@ class SyncFIFOBuffered(Module, _FIFOInterface):
 
         if hi_wm is not None:
             self.almost_full = Signal()
-            if hi_wm.bit_count() == 1:
-                self.comb += self.almost_full.eq(
-                    reduce(or_, [level_i for level_i in self.level[log2_int(hi_wm):]]))
-            else:
-                self.comb += self.almost_full.eq(self.level >= hi_wm)
+            self.comb += self.almost_full.eq(self.level >= hi_wm)
 
         if lo_wm is not None:
             self.almost_empty = Signal()
-            if lo_wm.bit_count() == 1:
-                self.comb += self.almost_empty.eq(
-                    reduce(and_, [~level_i for level_i in self.level[log2_int(lo_wm):]]) | (self.level == lo_wm))
-            else:
-                self.comb += self.almost_empty.eq(self.level <= lo_wm)
+            self.comb += self.almost_empty.eq(self.level <= lo_wm)
 
 
 class AsyncFIFO(Module, _FIFOInterface):
