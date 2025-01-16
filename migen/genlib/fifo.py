@@ -1,6 +1,3 @@
-from functools import reduce
-from operator import and_, or_
-
 from migen.fhdl.structure import *
 from migen.fhdl.module import Module
 from migen.fhdl.specials import Memory, READ_FIRST
