@@ -15,11 +15,17 @@ from migen.build.lattice import common
 def _build_pcf(named_sc, named_pc):
     r = ""
     for sig, pins, others, resname in named_sc:
+        pull_up_constraint = ""
+        if any(isinstance(c, Misc) and c.misc == "PULLUP" for c in others):
+            # Note: nextpnr MAY ignore this and disable pull-up depending on circumstances.
+            # e.g. When using as LVDS input pair, the pull-up resistor is always disabled.
+            # See project icestorm docs on I/O tile and nextpnr for more details.
+            pull_up_constraint = "-pullup yes"
         if len(pins) > 1:
             for bit, pin in enumerate(pins):
-                r += "set_io {}[{}] {}\n".format(sig, bit, pin)
+                r += "set_io {} {}[{}] {}\n".format(pull_up_constraint, sig, bit, pin)
         else:
-            r += "set_io {} {}\n".format(sig, pins[0])
+            r += "set_io {} {} {}\n".format(pull_up_constraint, sig, pins[0])
     if named_pc:
         r += "\n" + "\n\n".join(named_pc)
     return r
